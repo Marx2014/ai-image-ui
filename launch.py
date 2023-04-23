@@ -353,4 +353,5 @@ def start():
 
 if __name__ == "__main__":
     prepare_environment()
+    os.system(f"""sed -i -e "s/dict()))/dict())).cuda()/g" ./repositories/stable-diffusion-stability-ai/ldm/util.py""")
     start()
