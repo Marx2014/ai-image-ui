@@ -17,6 +17,7 @@ count = 0
 
 
 def start_task(id_task):
+    print("测试:start_task:".format(id_task))
     global current_task
 
     current_task = id_task
@@ -24,6 +25,7 @@ def start_task(id_task):
 
 
 def finish_task(id_task):
+    print("测试:finish_task:".format(id_task))
     global current_task
 
     if current_task == id_task:
@@ -35,6 +37,7 @@ def finish_task(id_task):
 
 
 def add_task_to_queue(id_job):
+    print("测试:add_task_to_queue:".format(id_job))
     pending_tasks[id_job] = time.time()
 
 
@@ -62,10 +65,15 @@ def progressapi(req: ProgressRequest):
     active = req.id_task == current_task
     queued = req.id_task in pending_tasks
     completed = req.id_task in finished_tasks
+
+    print("测试:req.id_task", req.id_task)
+    print("测试:current_task", current_task)
+    print("测试:Pending tasks size:", len(pending_tasks))
+    print("测试:Completed tasks size:", len(finished_tasks))
     global count
     if not active:
         count += 1
-        return ProgressResponse(active=active, queued=queued, completed=completed, id_live_preview=-1, textinfo="Task cur:{}!=last:{} In queue...{}".format(req.id_task,current_task,count) if queued else "Waiting...cur:{}!=last:{}{}".format(req.id_task,current_task,count))
+        return ProgressResponse(active=active, queued=queued, completed=completed, id_live_preview=-1, textinfo="In queue...{}".format(count) if queued else "Waiting...{}".format(count))
 
     progress = 0
     count = 0
