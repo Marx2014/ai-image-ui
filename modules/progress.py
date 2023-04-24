@@ -72,6 +72,12 @@ def progressapi(req: ProgressRequest):
     print("测试:Completed tasks size:", len(finished_tasks))
     global count
     if not active:
+        if count > 3 and len(pending_tasks) == 0 and current_task is None:
+            # 中断
+            print("测试:中断")
+            completed = True
+        else:
+            pass
         count += 1
         return ProgressResponse(active=active, queued=queued, completed=completed, id_live_preview=-1, textinfo="In queue...{}".format(count) if queued else "Waiting...{}".format(count))
 
