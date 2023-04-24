@@ -94,7 +94,7 @@ def progressapi(req: ProgressRequest):
         if image is not None:
             buffered = io.BytesIO()
             if opts.thumbnail_live_previews_enable:
-                image.save(buffered, format="JPEG", quality=50)
+                image.save(buffered, format="JPEG", quality=10)
             else:
                 image.save(buffered, format="png")
             live_preview = 'data:image/png;base64,' + base64.b64encode(buffered.getvalue()).decode("ascii")
