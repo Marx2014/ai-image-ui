@@ -13,6 +13,7 @@ import modules.shared as shared
 current_task = None
 pending_tasks = {}
 finished_tasks = []
+count = 0
 
 
 def start_task(id_task):
@@ -61,12 +62,13 @@ def progressapi(req: ProgressRequest):
     active = req.id_task == current_task
     queued = req.id_task in pending_tasks
     completed = req.id_task in finished_tasks
-
+    global count
     if not active:
-        return ProgressResponse(active=active, queued=queued, completed=completed, id_live_preview=-1, textinfo="In queue..." if queued else "Waiting...")
+        count += 1
+        return ProgressResponse(active=active, queued=queued, completed=completed, id_live_preview=-1, textinfo="Task cur:{}!=last:{} In queue...{}".format(req.id_task,current_task,count) if queued else "Waiting...cur:{}!=last:{}{}".format(req.id_task,current_task,count))
 
     progress = 0
-
+    count = 0
     job_count, job_no = shared.state.job_count, shared.state.job_no
     sampling_steps, sampling_step = shared.state.sampling_steps, shared.state.sampling_step
 
@@ -87,7 +89,10 @@ def progressapi(req: ProgressRequest):
         image = shared.state.current_image
         if image is not None:
             buffered = io.BytesIO()
-            image.save(buffered, format="png")
+            if opts.thumbnail_live_previews_enable:
+                image.save(buffered, format="JPEG", quality=50)
+            else:
+                image.save(buffered, format="png")
             live_preview = 'data:image/png;base64,' + base64.b64encode(buffered.getvalue()).decode("ascii")
             id_live_preview = shared.state.id_live_preview
         else:

@@ -15,7 +15,7 @@ def wrap_queued_call(func):
             res = func(*args, **kwargs)
 
         return res
-
+    print("测试:wrap_gradio_gpu_call", func.__name__)
     return f
 
 
@@ -41,7 +41,7 @@ def wrap_gradio_gpu_call(func, extra_outputs=None):
             shared.state.end()
 
         return res
-
+    print("测试:wrap_gradio_gpu_call", func.__name__)
     return wrap_gradio_call(f, extra_outputs=extra_outputs, add_stats=True)
 
 

@@ -348,7 +348,13 @@ def start():
     if '--nowebui' in sys.argv:
         webui.api_only()
     else:
-        webui.webui()
+        while True:
+            try:
+                webui.webui()
+            except Exception as e:
+                print("出现异常: ", e)
+                print("重启 webui...")
+                continue
 
 
 if __name__ == "__main__":

@@ -231,7 +231,7 @@ def api_only():
 def webui():
     launch_api = cmd_opts.api
     initialize()
-
+    print("启动webui死循环...")
     while 1:
         if shared.opts.clean_temp_dir_at_start:
             ui_tempdir.cleanup_tmpdr()
@@ -331,7 +331,6 @@ def webui():
         extra_networks.initialize()
         extra_networks.register_extra_network(extra_networks_hypernet.ExtraNetworkHypernet())
         startup_timer.record("initialize extra networks")
-
 
 if __name__ == "__main__":
     if cmd_opts.nowebui:

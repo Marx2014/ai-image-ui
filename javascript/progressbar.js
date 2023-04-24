@@ -97,6 +97,7 @@ function requestProgress(id_task, progressbarContainer, gallery, atEnd, onProgre
     var fun = function(id_task, id_live_preview){
         request("./internal/progress", {"id_task": id_task, "id_live_preview": id_live_preview}, function(res){
             if(res.completed){
+                print("测试: progress完成")
                 removeProgressBar()
                 return
             }
@@ -139,6 +140,7 @@ function requestProgress(id_task, progressbarContainer, gallery, atEnd, onProgre
             }
 
             if(elapsedFromStart > 120 && !res.queued && !res.active){
+                print("测试: progress removeProgressBar")
                 removeProgressBar()
                 return
             }
@@ -167,9 +169,11 @@ function requestProgress(id_task, progressbarContainer, gallery, atEnd, onProgre
             }
 
             setTimeout(() => {
+                print("测试:run task progress")
                 fun(id_task, res.id_live_preview);
             }, opts.live_preview_refresh_period || 500)
         }, function(){
+            print("测试:progress request后出现某种错误")
             removeProgressBar()
         })
     }
