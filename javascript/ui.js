@@ -160,7 +160,7 @@ function showSubmitButtons(tabname, show){
 }
 
 function submit(){
-    print("测试:点击了text2img")
+    console.log("测试:点击了text2img");
     rememberGallerySelection('txt2img_gallery')
     showSubmitButtons('txt2img', false)
 
@@ -178,7 +178,7 @@ function submit(){
 }
 
 function submit_img2img(){
-    print("测试:点击了img2img")
+    console.log("测试:点击了img2img");
     rememberGallerySelection('img2img_gallery')
     showSubmitButtons('img2img', false)
 
@@ -324,7 +324,7 @@ let wait_time = 3000
 let token_timeouts = {};
 
 function update_txt2img_tokens(...args) {
-    print("测试:点击了txt2img_token_button")
+    console.log("测试:点击了txt2img_token_button");
 	update_token_counter("txt2img_token_button")
 	if (args.length == 2)
 		return args[0]
@@ -332,7 +332,7 @@ function update_txt2img_tokens(...args) {
 }
 
 function update_img2img_tokens(...args) {
-    print("测试:点击了img2img_token_button")
+    console.log("测试:点击了img2img_token_button");
 	update_token_counter("img2img_token_button")
 	if (args.length == 2)
 		return args[0]
