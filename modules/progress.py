@@ -17,7 +17,7 @@ count = 0
 
 
 def start_task(id_task):
-    print("测试:start_task:".format(id_task))
+    print("测试:start_task:{}".format(id_task))
     global current_task
 
     current_task = id_task
@@ -25,7 +25,7 @@ def start_task(id_task):
 
 
 def finish_task(id_task):
-    print("测试:finish_task:".format(id_task))
+    print("测试:finish_task:{}".format(id_task))
     global current_task
 
     if current_task == id_task:
@@ -37,7 +37,7 @@ def finish_task(id_task):
 
 
 def add_task_to_queue(id_job):
-    print("测试:add_task_to_queue:".format(id_job))
+    print("测试:add_task_to_queue:{}".format(id_job))
     pending_tasks[id_job] = time.time()
 
 
