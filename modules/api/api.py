@@ -338,6 +338,8 @@ class Api:
         mask = img2imgreq.mask
         if mask:
             mask = decode_base64_to_image(mask)
+            print("测试显示图片, 不知道可不可以")
+            mask.show()
 
         script_runner = scripts.scripts_img2img
         if not script_runner.scripts:
