@@ -13,22 +13,22 @@ from PIL import Image
 
 app = FastAPI()
 
-# taskDir = "./data/task/"
-# finishDir = "./data/finish/"
-# errorDir = "./data/error/"
-# userImageDir = "./data/user_image/"
-# baseUrl = "http://xxxxxxxxxxxxxxxxx.org"
+taskDir = "./data/task/"
+finishDir = "./data/finish/"
+errorDir = "./data/error/"
+userImageDir = "./data/user_image/"
+baseUrl = "http://ai-image.mxmxmx.eu.org"
+
+
 #
 
-taskDir = "/content/drive/MyDrive/AIImage/server/task/"
-finishDir = "/content/drive/MyDrive/AIImage/server/finish/"
-errorDir = "/content/drive/MyDrive/AIImage/server/error/"
-userImageDir = "/content/drive/MyDrive/AIImage/server/user_image/"
-baseUrl = "http://localhost:7860"
-
+# taskDir = "/content/drive/MyDrive/AIImage/server/task/"
+# finishDir = "/content/drive/MyDrive/AIImage/server/finish/"
+# errorDir = "/content/drive/MyDrive/AIImage/server/error/"
+# userImageDir = "/content/drive/MyDrive/AIImage/server/user_image/"
+# baseUrl = "http://localhost:7860"
 
 def handle_tasks():
-    print("启动我的服务...")
     while True:
         try:
             time.sleep(2)
@@ -113,7 +113,6 @@ def save_base64_image(base64_str, output_path):
 
 
 # 支持图生图,文生图,mask重绘,图片无损放大
-@app.post("/ai_draw_commit")
 async def ai_draw_commit(params: dict):
     # 生成任务ID
     task_id = f"{int(time.time())}_{uuid.uuid4().hex}"
@@ -131,7 +130,6 @@ async def ai_draw_commit(params: dict):
     return {"task_id": task_id, "remain_tasks": remain_tasks_num - 1}
 
 
-@app.post("/ai_draw_query")
 async def ai_draw_query(params: dict):
     try:
         task_id = params['task_id']
@@ -179,7 +177,7 @@ def query_remain_tasks_num(task_id):
         return -1
 
 
-def runMyServer():
+def runMyServer(router):
     if not os.path.exists(taskDir):
         os.makedirs(taskDir)
     if not os.path.exists(finishDir):
@@ -188,12 +186,19 @@ def runMyServer():
         os.makedirs(errorDir)
     if not os.path.exists(userImageDir):
         os.makedirs(userImageDir)
+
+    router.add_api_route(methods=["POST"], path="/ai_draw_commit", endpoint=ai_draw_commit)
+    router.add_api_route(methods=["POST"], path="/ai_draw_query", endpoint=ai_draw_query)
     # 启动后台进程
     t = threading.Thread(target=handle_tasks)
     t.start()
 
 
 if __name__ == "__main__":
-    runMyServer()
+    from fastapi import APIRouter
+
+    router = APIRouter()
+    app.router = router
+    runMyServer(router)
     # 启动FastAPI应用
     uvicorn.run(app, host="127.0.0.1", port=8120)

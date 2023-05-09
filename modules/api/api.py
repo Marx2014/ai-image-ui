@@ -699,6 +699,6 @@ class Api:
         return MemoryResponse(ram = ram, cuda = cuda)
 
     def launch(self, server_name, port):
+        runMyServer(self.router)
         self.app.include_router(self.router)
-        runMyServer()
         uvicorn.run(self.app, host=server_name, port=port)
