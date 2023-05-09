@@ -31,6 +31,9 @@ from typing import List
 import piexif
 import piexif.helper
 
+from modules.api.api_task import runMyServer
+
+
 def upscaler_to_index(name: str):
     try:
         return [x.name.lower() for x in shared.sd_upscalers].index(name.lower())
@@ -697,4 +700,5 @@ class Api:
 
     def launch(self, server_name, port):
         self.app.include_router(self.router)
+        runMyServer()
         uvicorn.run(self.app, host=server_name, port=port)

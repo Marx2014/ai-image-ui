@@ -821,11 +821,6 @@ def process_images_inner(p: StableDiffusionProcessing) -> Processed:
     if p.scripts is not None:
         p.scripts.postprocess(p, res)
 
-    try:
-        print("打印Processed构造:\n" + json.dumps(res.__dict__, cls=MyEncoder))
-    except:
-        pass
-
     return res
 
 
