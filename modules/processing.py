@@ -320,6 +320,7 @@ class Processed:
         self.all_seeds = all_seeds or p.all_seeds or [self.seed]
         self.all_subseeds = all_subseeds or p.all_subseeds or [self.subseed]
         self.infotexts = infotexts or [info]
+        print("打印Processed构造:\n" + json.dumps(self.__dict__))
 
     def js(self):
         obj = {
@@ -797,6 +798,7 @@ class StableDiffusionProcessingTxt2Img(StableDiffusionProcessing):
         self.truncate_x = 0
         self.truncate_y = 0
         self.applied_old_hires_behavior_to = None
+        print("打印StableDiffusionProcessingTxt2Img构造:\n" + json.dumps(self.__dict__))
 
     def init(self, all_prompts, all_seeds, all_subseeds):
         if self.enable_hr:
