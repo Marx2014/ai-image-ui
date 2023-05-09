@@ -162,6 +162,7 @@ class StableDiffusionProcessing:
         self.all_seeds = None
         self.all_subseeds = None
         self.iteration = 0
+        print("打印StableDiffusionProcessing构造:\n" + str(self.__dict__))
 
     @property
     def sd_model(self):
