@@ -62,10 +62,10 @@ def handle_tasks():
                     # print(f"响应结果: {resp}")
                     resp_json = resp.json()
                     output_jpg = os.path.join(finishDir, f"{task_id}.jpg")
-                    if "images" in params and save_base64_image(resp_json["images"][0], output_jpg):
+                    if "images" in resp_json and save_base64_image(resp_json["images"][0], output_jpg):
                         # 去掉base64字符串替换为jpg路径, 这样对客户端不需要在json中返回那么大的图片数据还要客户端解析base64,导致麻烦
                         resp_json["images"] = f"{task_id}.jpg"
-                    if "image" in params and save_base64_image(resp_json["image"], output_jpg):
+                    if "image" in resp_json and save_base64_image(resp_json["image"], output_jpg):
                         resp_json["image"] = f"{task_id}.jpg"
 
                     # 将响应保存到文件中
