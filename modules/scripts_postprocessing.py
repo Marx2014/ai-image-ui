@@ -1,7 +1,13 @@
+import base64
+import io
+import json
 import os
 import gradio as gr
+from PIL import Image
 
 from modules import errors, shared
+
+from modules.processing import MyEncoder
 
 
 class PostprocessedImage:
@@ -44,8 +50,6 @@ class ScriptPostprocessing:
 
     def image_changed(self):
         pass
-
-
 
 
 def wrap_call(func, filename, funcname, *args, default=None, **kwargs):
@@ -101,7 +105,8 @@ class ScriptPostprocessingRunner:
 
             return len(self.scripts)
 
-        script_scores = {script.name: (script_score(script.name), script.order, script.name, original_index) for original_index, script in enumerate(self.scripts)}
+        script_scores = {script.name: (script_score(script.name), script.order, script.name, original_index) for
+                         original_index, script in enumerate(self.scripts)}
 
         return sorted(self.scripts, key=lambda x: script_scores[x.name])
 
@@ -128,6 +133,13 @@ class ScriptPostprocessingRunner:
                 process_args[name] = value
 
             script.process(pp, **process_args)
+            try:
+                pp_json = json.dumps(pp.__dict__, cls=MyEncoder)
+                process_args_json = json.dumps(process_args, cls=MyEncoder)
+                print(f"pp: {pp_json}")
+                print(f"process_args: {process_args_json}")
+            except:
+                pass
 
     def create_args_for_run(self, scripts_args):
         if not self.ui_created:
@@ -149,4 +161,3 @@ class ScriptPostprocessingRunner:
     def image_changed(self):
         for script in self.scripts_in_preferred_order():
             script.image_changed()
-
