@@ -49,20 +49,6 @@ class ScriptPostprocessing:
     def image_changed(self):
         pass
 
-class MyEncoder2(json.JSONEncoder):
-    def encode(self, o):
-        try:
-            result = super().encode(o)
-        except TypeError as e:
-            result = f'Error: {e}'
-        return result
-
-    def default(self, o):
-        if isinstance(o, Image.Image):
-            with io.BytesIO() as b:
-                o.save(b, format='PNG')
-                return base64.b64encode(b.getvalue()).decode()
-        return super().default(o)
 
 def wrap_call(func, filename, funcname, *args, default=None, **kwargs):
     try:
@@ -145,13 +131,6 @@ class ScriptPostprocessingRunner:
                 process_args[name] = value
 
             script.process(pp, **process_args)
-            try:
-                pp_json = json.dumps(pp.__dict__, cls=MyEncoder2)
-                process_args_json = json.dumps(process_args, cls=MyEncoder2)
-                print(f"pp: {pp_json}")
-                print(f"process_args: {process_args_json}")
-            except:
-                pass
 
     def create_args_for_run(self, scripts_args):
         if not self.ui_created:

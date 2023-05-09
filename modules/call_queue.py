@@ -1,9 +1,13 @@
+import base64
 import html
+import io
+import json
 import sys
 import threading
 import traceback
 import time
 
+from PIL import Image
 from modules import shared, progress
 
 queue_lock = threading.Lock()
@@ -15,17 +19,36 @@ def wrap_queued_call(func):
             res = func(*args, **kwargs)
 
         return res
+
     print("测试:wrap_gradio_gpu_call", func.__name__)
     return f
 
 
+class MyEncoder2(json.JSONEncoder):
+    def encode(self, o):
+        try:
+            result = super().encode(o)
+        except TypeError as e:
+            result = f'Error: {e}'
+        return result
+
+    def default(self, o):
+        if isinstance(o, Image.Image):
+            with io.BytesIO() as b:
+                o.save(b, format='PNG')
+                return base64.b64encode(b.getvalue()).decode()
+        return super().default(o)
+
+
 def wrap_gradio_gpu_call(func, extra_outputs=None):
     def f(*args, **kwargs):
-        print("args:")
-        print(args)
-        print("\n\n")
-        print("kwargs:")
-        print(kwargs)
+
+        try:
+            args_list = list(args)
+            args_json = json.dumps(args_list)
+            print("打印wrap_gradio_gpu_call:\n" + args_json)
+        except:
+            pass
         # if the first argument is a string that says "task(...)", it is treated as a job id
         if len(args) > 0 and type(args[0]) == str and args[0][0:5] == "task(" and args[0][-1] == ")":
             id_task = args[0]
@@ -45,6 +68,7 @@ def wrap_gradio_gpu_call(func, extra_outputs=None):
             shared.state.end()
 
         return res
+
     print("测试:wrap_gradio_gpu_call", func.__name__)
     return wrap_gradio_call(f, extra_outputs=extra_outputs, add_stats=True)
 
@@ -60,7 +84,7 @@ def wrap_gradio_call(func, extra_outputs=None, add_stats=False):
             res = list(func(*args, **kwargs))
         except Exception as e:
             # When printing out our debug argument list, do not print out more than a MB of text
-            max_debug_str_len = 131072 # (1024*1024)/8
+            max_debug_str_len = 131072  # (1024*1024)/8
 
             print("Error completing request", file=sys.stderr)
             argStr = f"Arguments: {str(args)} {str(kwargs)}"
@@ -76,7 +100,7 @@ def wrap_gradio_call(func, extra_outputs=None, add_stats=False):
             if extra_outputs_array is None:
                 extra_outputs_array = [None, '']
 
-            res = extra_outputs_array + [f"<div class='error'>{html.escape(type(e).__name__+': '+str(e))}</div>"]
+            res = extra_outputs_array + [f"<div class='error'>{html.escape(type(e).__name__ + ': ' + str(e))}</div>"]
 
         shared.state.skipped = False
         shared.state.interrupted = False
@@ -90,15 +114,15 @@ def wrap_gradio_call(func, extra_outputs=None, add_stats=False):
         elapsed_s = elapsed % 60
         elapsed_text = f"{elapsed_s:.2f}s"
         if elapsed_m > 0:
-            elapsed_text = f"{elapsed_m}m "+elapsed_text
+            elapsed_text = f"{elapsed_m}m " + elapsed_text
 
         if run_memmon:
-            mem_stats = {k: -(v//-(1024*1024)) for k, v in shared.mem_mon.stop().items()}
+            mem_stats = {k: -(v // -(1024 * 1024)) for k, v in shared.mem_mon.stop().items()}
             active_peak = mem_stats['active_peak']
             reserved_peak = mem_stats['reserved_peak']
             sys_peak = mem_stats['system_peak']
             sys_total = mem_stats['total']
-            sys_pct = round(sys_peak/max(sys_total, 1) * 100, 2)
+            sys_pct = round(sys_peak / max(sys_total, 1) * 100, 2)
 
             vram_html = f"<p class='vram'>Torch active/reserved: {active_peak}/{reserved_peak} MiB, <wbr>Sys VRAM: {sys_peak}/{sys_total} MiB ({sys_pct}%)</p>"
         else:
@@ -110,4 +134,3 @@ def wrap_gradio_call(func, extra_outputs=None, add_stats=False):
         return tuple(res)
 
     return f
-
