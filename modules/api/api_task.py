@@ -13,20 +13,11 @@ from PIL import Image
 
 app = FastAPI()
 
-taskDir = "./data/task/"
-finishDir = "./data/finish/"
-errorDir = "./data/error/"
-userImageDir = "./data/user_image/"
-baseUrl = "http://ai-image.mxmxmx.eu.org"
-
-
-#
-
-# taskDir = "/content/drive/MyDrive/AIImage/server/task/"
-# finishDir = "/content/drive/MyDrive/AIImage/server/finish/"
-# errorDir = "/content/drive/MyDrive/AIImage/server/error/"
-# userImageDir = "/content/drive/MyDrive/AIImage/server/user_image/"
-# baseUrl = "http://localhost:7860"
+taskDir = "/content/drive/MyDrive/AIImage/server/task/"
+finishDir = "/content/drive/MyDrive/AIImage/server/finish/"
+errorDir = "/content/drive/MyDrive/AIImage/server/error/"
+userImageDir = "/content/drive/MyDrive/AIImage/server/user_image/"
+baseUrl = "http://localhost:7860"
 
 def handle_tasks():
     while True:
