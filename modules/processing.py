@@ -163,7 +163,6 @@ class StableDiffusionProcessing:
         self.all_seeds = None
         self.all_subseeds = None
         self.iteration = 0
-        print("打印StableDiffusionProcessing构造:\n" + json.dumps(self.__dict__))
 
     @property
     def sd_model(self):
@@ -271,7 +270,13 @@ class StableDiffusionProcessing:
 
     def close(self):
         self.sampler = None
-
+class MyEncoder(json.JSONEncoder):
+    def encode(self, o):
+        try:
+            result = super().encode(o)
+        except TypeError as e:
+            result = f'Error: {e}'
+        return result
 
 class Processed:
     def __init__(self, p: StableDiffusionProcessing, images_list, seed=-1, info="", subseed=None, all_prompts=None, all_negative_prompts=None, all_seeds=None, all_subseeds=None, index_of_first_image=0, infotexts=None, comments=""):
@@ -320,7 +325,7 @@ class Processed:
         self.all_seeds = all_seeds or p.all_seeds or [self.seed]
         self.all_subseeds = all_subseeds or p.all_subseeds or [self.subseed]
         self.infotexts = infotexts or [info]
-        print("打印Processed构造:\n" + json.dumps(self.__dict__))
+        print("打印Processed构造:\n" + json.dumps(self.__dict__, cls=MyEncoder))
 
     def js(self):
         obj = {
@@ -798,7 +803,6 @@ class StableDiffusionProcessingTxt2Img(StableDiffusionProcessing):
         self.truncate_x = 0
         self.truncate_y = 0
         self.applied_old_hires_behavior_to = None
-        print("打印StableDiffusionProcessingTxt2Img构造:\n" + json.dumps(self.__dict__))
 
     def init(self, all_prompts, all_seeds, all_subseeds):
         if self.enable_hr:
