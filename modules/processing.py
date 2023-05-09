@@ -3,6 +3,7 @@ import math
 import os
 import sys
 import warnings
+import json
 
 import torch
 import numpy as np
@@ -162,7 +163,7 @@ class StableDiffusionProcessing:
         self.all_seeds = None
         self.all_subseeds = None
         self.iteration = 0
-        print("打印StableDiffusionProcessing构造:\n" + str(self.__dict__))
+        print("打印StableDiffusionProcessing构造:\n" + json.dumps(self.__dict__))
 
     @property
     def sd_model(self):
