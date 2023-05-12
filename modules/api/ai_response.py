@@ -5,7 +5,7 @@ class AIResponse:
     def __init__(self, status: int, message: str, image_url: str = "", remain_tasks: int = 0):
         self.status = status
         self.message = message
-        self.image_base64 = image_url
+        self.image_url = image_url
         self.remain_tasks = remain_tasks
 
     def to_json(self):

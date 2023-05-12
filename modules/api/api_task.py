@@ -1,11 +1,10 @@
 import uuid
-from collections import defaultdict
-
+import asyncio
+import qiniu
 from fastapi import FastAPI, WebSocket
 import threading
 import requests
 import uvicorn
-from typing import Dict, Set
 import sys
 import os
 
@@ -18,14 +17,51 @@ from ai_response import AIResponse
 
 app = FastAPI()
 
-# 用一个 dict 来存储每个 task_id 对应的 WebSocket 连接集合
-connected_clients: Dict[str, Set[WebSocket]] = defaultdict(set)
 
-taskDir = "/content/drive/MyDrive/AIImage/server/task/"
-finishDir = "/content/drive/MyDrive/AIImage/server/finish/"
-errorDir = "/content/drive/MyDrive/AIImage/server/error/"
-userImageDir = "/content/drive/MyDrive/AIImage/server/user_image/"
-baseUrl = "http://localhost:7860"
+
+taskDir = os.getenv('taskDir')
+finishDir = os.getenv('finishDir')
+errorDir = os.getenv('errorDir')
+userImageDir = os.getenv('userImageDir')
+baseUrl = os.getenv('baseUrl')
+
+# 初始化七牛云对象存储
+access_key = os.getenv('access_key')
+secret_key = os.getenv('secret_key')
+bucket_name = os.getenv('bucket_name')
+bucket_url = os.getenv('bucket_url')
+
+
+q = qiniu.Auth(access_key, secret_key)
+bucket = qiniu.BucketManager(q)
+
+
+# 使用七牛云URL签名算法对url进行处理，返回带有有效download_token的url
+def sign_url(url):
+    q = qiniu.Auth(access_key, secret_key)
+    return q.private_download_url(url, expires=3600)
+
+
+# 从七牛云获取url外链, 如果不存在, 先上传再获取外链
+def fetch_image_url(img_path):
+    # 获取文件名
+    filename = os.path.basename(img_path)
+    qiniu_path = filename
+
+    with open(img_path, 'rb') as f:
+        ret, info = bucket.stat(bucket_name, filename)
+        if ret:
+            print(f"已存在文件，检查是否过期:{ret['putTime']}")
+            # 七牛云上已存在该文件，检查是否过期
+            expires = datetime.datetime.utcnow() + datetime.timedelta(days=30)
+            if ret['putTime'] / 10000000 + 3600 * 8 > expires.timestamp():
+                # 未过期，直接返回七牛云的外链url
+                return sign_url(f"{bucket_url}{qiniu_path}")
+        print(f"开始上传")
+        # 七牛云上不存在该文件或已过期，上传到七牛云并返回外链url
+        token = q.upload_token(bucket_name, qiniu_path)
+        ret, info = qiniu.put_data(token, qiniu_path, f)
+        return sign_url(f"{bucket_url}{qiniu_path}")
 
 
 def take_first_task():
@@ -49,17 +85,18 @@ def query_remain_tasks_num(task_id):
         # 检查task目录中是否存在任务
         tasks = os.listdir(taskDir)
         tasks_num = len(tasks)
-        if tasks_num == 0:
-            return 0
-        # 统计排在该任务前面（包括）的任务数
-        before_count = 0
-        for task in tasks:
-            if task == task_json_name(task_id):
-                break
-            before_count += 1
-        # 根据排在该任务前面（包括）的任务数计算剩余任务数
-        remain_tasks_num = tasks_num - before_count
-        return remain_tasks_num
+        return tasks_num
+        # if tasks_num == 0:
+        #     return 0
+        # # 统计排在该任务前面（包括）的任务数
+        # before_count = 0
+        # for task in tasks:
+        #     if task == task_json_name(task_id):
+        #         break
+        #     before_count += 1
+        # # 根据排在该任务前面（包括）的任务数计算剩余任务数
+        # remain_tasks_num = tasks_num - before_count
+        # return remain_tasks_num
     except Exception as e:
         return -1
 
@@ -85,11 +122,11 @@ def request_webui_task(params, task_id):
 
 
 def get_base64_for_json(json_obj):
-    if json_obj.get("image", "").startswith("data:image/"):
+    if json_obj.get("image", ""):
         return json_obj["image"]
     elif json_obj.get("images"):
         images = json_obj["images"]
-        if len(images) > 0 and images[0].startswith("data:image/"):
+        if len(images) > 0 and images[0]:
             return images[0]
     return None
 
@@ -107,22 +144,26 @@ def handle_tasks():
             else:
                 task_id, task_file = task
                 try:
-                    print(f"处理任务,读取task_id: {task_id}")
+                    print(f"\n处理任务,读取task_id: {task_id}")
                     params = read_json(task_file)
                     # 请求AI绘图
                     resp = request_webui_task(params, task_id)
+                    print(f"\n请求任务task_id完成: {task_id}:status_code={resp.status_code}")
                     if resp.status_code == 200:
                         resp_json = resp.json()
 
-                        if save_base64_image(get_base64_for_json(resp_json), task_finish_jpg_name(task_id)):
-                            resp_json["image"] = task_finish_jpg_name(task_id)
+                        output_path = file(finishDir, task_finish_jpg_name(task_id))
+                        print(f"\n存储图片: {output_path}")
+                        if save_base64_image(get_base64_for_json(resp_json), output_path):
+                            print(f"\n上传图片: {output_path}")
+                            image_url = fetch_image_url(output_path)
+                            resp_json["image"] = image_url
+                            print(f"\n上传图片完毕: {image_url}")
 
                         # 将响应保存到文件中
                         # write_json(file(finishDir, task_finish_json_name(task_id)), resp_json)
                         # 移动任务文件到finish目录中
                         file_move(task_file, file(finishDir, task_json_name(task_id)))
-                        # 通知客户端更新
-                        ws_response_to_client(task_id)
                     else:
                         # 未知异常
                         raise Exception(f"请求失败，状态码为: {resp.status_code}")
@@ -133,20 +174,6 @@ def handle_tasks():
                     write_file(file(errorDir, error_log_name(task_id)), str(e))
         except Exception as e:
             print(f"任务处理出错 Exception: {e}")
-
-
-async def ws_response_to_client(task_id):
-    # 如果有客户端正在连接websocket，则立即通知客户端
-    if task_id in connected_clients:
-        for client in connected_clients[task_id]:
-            print(f"响应客户端: task_id={task_id} {client.client.host}:{client.client.port}")
-            # 查询一次AI结果
-            response = await ai_draw_query({"task_id": task_id})
-            await client.send_json(response.to_json())
-            print(f"响应客户端: task_id={task_id} 完毕,response={response}")
-            await client.close()  # 关闭客户端连接
-
-        del connected_clients[task_id]
 
 
 # 支持图生图,文生图,mask重绘,图片无损放大
@@ -176,23 +203,12 @@ async def ai_draw_query(params: dict):
         task_id_json = task_json_name(task_id)
 
         # 检查finish目录中是否存在任务结果文件
-        if file_exists(finishDir, task_finish_json_name(task_id)):
-            resp_json = read_json(file(finishDir, task_finish_json_name(task_id)))
-            base64_img = ""
-            if "images" in resp_json:
-                try:
-                    base64_img = resp_json["images"][0]
-                except:
-                    pass
-            if "image" in resp_json:
-                try:
-                    base64_img = resp_json["image"]
-                except:
-                    pass
-            if base64_img and base64_img.strip():
-                response.status = 0
-                response.message = f"图片生成成功!"
-                response.image_base64 = base64_img
+        if file_exists(finishDir, task_finish_jpg_name(task_id)):
+            img_file = file(finishDir, task_finish_jpg_name(task_id))
+            image_url = fetch_image_url(img_file)
+            response.status = 0
+            response.message = f"图片生成成功!"
+            response.image_url = image_url
         elif file_exists(errorDir, task_id_json):
             content = read_file(file(errorDir, error_log_name(task_id)))
             response.status = -1
@@ -214,20 +230,43 @@ async def api_websocket_handler(websocket: WebSocket):
     # 接收任务 ID
     params = json.loads(await websocket.receive_text())
     task_id = params['task_id']
-    # 判断任务是否已经完成
-    response = await ai_draw_query(params)
-    if response.status == 0 and not response.image_base64:
-        # 如果图片已经生成，直接发送图片
-        await websocket.send_json(response.to_json())
-        await websocket.close()  # 关闭客户端连接
 
-    elif response.status == 2:
-        # 如果图片还在排队中, 那么记录task_id client
-        connected_clients[task_id].add(websocket)
-    else:
-        # 其它情况视为失败,直接告诉客户端已经失败
-        await websocket.send_json(response.to_json())
-        await websocket.close()  # 关闭客户端连接
+    # 这里是一个优化, 如果任务还在排队, 那么每隔n秒轮询一次, 直到超时或者成功或者失败
+    max_polling_count = 3 * 60
+    polling_count = 0
+
+    while polling_count < max_polling_count:
+        # 判断任务是否已经完成
+        response = await ai_draw_query(params)
+        if response.status == 2:
+            # 检测连接是否断开
+            try:
+                # 每隔一段时间发送一次消息，如果客户端没有响应，则抛出 WebSocketDisconnect 异常
+                time_out_percent = (polling_count / max_polling_count * 100)
+                await asyncio.wait_for(
+                    websocket.send_json({"ping": time_out_percent, "remain_tasks": response.remain_tasks}),
+                    timeout=5
+                )
+                await websocket.receive_text()
+            except:
+                # 客户端断开连接
+                break
+
+            polling_count += 1
+            print(f"图片还在排队中:{task_id},序号:{response.remain_tasks}")
+            await asyncio.sleep(5)
+        else:
+            print(f"图片完成:{task_id}:{response.message}")
+            # 成功或者失败，直接响应给客户端并结束连接
+            await websocket.send_json(response.to_json())
+            await websocket.close()
+            break
+
+    # 如果超过最大轮询次数，返回错误信息并结束连接
+    if polling_count >= max_polling_count:
+        error_response = {"status": "failed", "message": "轮询超时，请稍后再试"}
+        await websocket.send_json(error_response)
+        await websocket.close()
 
 
 def runMyServer(router):

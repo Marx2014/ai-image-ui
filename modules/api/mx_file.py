@@ -62,8 +62,8 @@ def file_exists(dirs, name=None):
         return os.path.exists(dirs)
 
 
-def task_finish_json_name(task_id):
-    return f"{task_id}_finish.json"
+# def task_finish_json_name(task_id):
+#     return f"{task_id}_finish.json"
 
 
 def task_finish_jpg_name(task_id):
