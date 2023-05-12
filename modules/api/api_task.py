@@ -6,7 +6,10 @@ import threading
 import requests
 import uvicorn
 from typing import Dict, Set
+import sys
+import os
 
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 import datetime
 
 from mx_file import *
