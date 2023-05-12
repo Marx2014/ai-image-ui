@@ -8,7 +8,7 @@ import uvicorn
 from typing import Dict, Set
 
 import datetime
-import qiniu
+
 from mx_file import *
 # 导入 AIResponse 类
 from ai_response import AIResponse
